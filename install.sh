@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
-# install.sh — Register gsd-testing-config.js as a SessionStart hook
+# install.sh — Register gsd-testing-config.js as a PreToolUse hook
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOOK_SRC="$SCRIPT_DIR/gsd-testing-config.js"
 HOOK_FILE="$HOME/.claude/hooks/gsd-testing-config.js"
 SETTINGS_FILE="$HOME/.claude/settings.json"
 
-if [ ! -f "$HOOK_FILE" ]; then
-  echo "ERROR: Hook file not found at $HOOK_FILE"
+if [ ! -f "$HOOK_SRC" ]; then
+  echo "ERROR: gsd-testing-config.js not found in the same directory as install.sh"
   exit 1
 fi
 
+mkdir -p "$HOME/.claude/hooks"
+cp "$HOOK_SRC" "$HOOK_FILE"
 chmod +x "$HOOK_FILE"
+echo "Copied gsd-testing-config.js to $HOOK_FILE"
 
 # Ensure settings.json exists
 if [ ! -f "$SETTINGS_FILE" ]; then
