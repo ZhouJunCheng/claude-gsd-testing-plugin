@@ -93,24 +93,28 @@
 
 ### 步骤
 
-**1. 复制插件文件**
+**1. Clone 仓库**
 
 ```bash
-mkdir -p ~/.claude/skills/gsd-testing-setup
-mkdir -p ~/.claude/hooks
-
-cp gsd-testing-config.js ~/.claude/hooks/
-cp install.sh ~/.claude/skills/gsd-testing-setup/
+git clone https://github.com/ZhouJunCheng/claude-gsd-testing-plugin.git
+cd claude-gsd-testing-plugin
 ```
 
 **2. 运行安装脚本**
 
+macOS / Linux / WSL：
 ```bash
-chmod +x ~/.claude/skills/gsd-testing-setup/install.sh
-~/.claude/skills/gsd-testing-setup/install.sh
+chmod +x install.sh
+./install.sh
+```
+
+Windows（PowerShell 或 CMD）：
+```bat
+.\install.bat
 ```
 
 安装脚本会：
+- 复制 `gsd-testing-config.js` 到 `~/.claude/hooks/`
 - 自动备份现有 `settings.json` → `settings.json.YYYYMMDD.bak`
 - 注册 `PreToolUse` hook（matcher: Skill）
 
@@ -159,3 +163,24 @@ gsd-sdk query config-set testing.coverage_command "npm run test:coverage"
 gsd-sdk query config-set testing.coverage_threshold 80
 gsd-sdk query config-set workflow.tdd_mode true
 ```
+
+---
+
+## 卸载方式
+
+macOS / Linux / WSL：
+```bash
+./uninstall.sh
+```
+
+Windows（PowerShell 或 CMD）：
+```bat
+.\uninstall.bat
+```
+
+卸载脚本会：
+- 删除 `~/.claude/hooks/gsd-testing-config.js`
+- 自动备份现有 `settings.json` → `settings.json.YYYYMMDD.bak`
+- 从 `settings.json` 中移除 hook 注册项
+
+重启 Claude Code 后生效。
