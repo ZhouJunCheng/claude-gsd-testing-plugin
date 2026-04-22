@@ -22,9 +22,9 @@ try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch {}
 if (!settings.hooks) settings.hooks = {};
 if (!settings.hooks.PreToolUse) settings.hooks.PreToolUse = [];
 
-// Normalize path separators for Claude Code
+// Normalize path separators for Claude Code, wrap in quotes to handle spaces
 const hookPathNorm = hookPath.replace(/\\/g, '/');
-const entry = { matcher: 'Skill', hooks: [{ type: 'command', command: 'node ' + hookPathNorm }] };
+const entry = { matcher: 'Skill', hooks: [{ type: 'command', command: 'node "' + hookPathNorm + '"', timeout: 10 }] };
 const alreadyRegistered = settings.hooks.PreToolUse.some(
   h => h.hooks && h.hooks.some(hh => hh.command && hh.command.includes('gsd-testing-config'))
 );

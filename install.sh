@@ -47,7 +47,7 @@ try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch {}
 if (!settings.hooks) settings.hooks = {};
 if (!settings.hooks.PreToolUse) settings.hooks.PreToolUse = [];
 
-const entry = { matcher: 'Skill', hooks: [{ type: 'command', command: `node ${hookPath}` }] };
+const entry = { matcher: 'Skill', hooks: [{ type: 'command', command: `node "${hookPath}"`, timeout: 10 }] };
 const alreadyRegistered = settings.hooks.PreToolUse.some(
   h => h.hooks && h.hooks.some(hh => hh.command && hh.command.includes('gsd-testing-config'))
 );
