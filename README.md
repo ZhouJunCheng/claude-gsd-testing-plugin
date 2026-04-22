@@ -2,6 +2,8 @@
 
 > 为 [GSD (Get Shit Done)](https://github.com/gsd-build/get-shit-done) 提供的测试框架配置插件。在 `/gsd-new-project` 启动时自动触发，引导用户完成单元测试框架选择，无需修改 GSD 任何源代码。
 
+![GSD](https://img.shields.io/badge/GSD-%3E%3D1.37.1-blue) ![Claude Code](https://img.shields.io/badge/Claude%20Code-required-orange) ![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green)
+
 ## 实现效果
 
 ### 触发时机
@@ -86,7 +88,7 @@
 ### 前置条件
 
 - [Claude Code](https://claude.ai/code) 已安装
-- [GSD](https://github.com/gsd-build/get-shit-done) 已安装（`npm i -g get-shit-done-cc`）
+- [GSD](https://github.com/gsd-build/get-shit-done) >= 1.37.1（`npm i -g get-shit-done-cc`）
 - Node.js >= 18
 
 ### 步骤
