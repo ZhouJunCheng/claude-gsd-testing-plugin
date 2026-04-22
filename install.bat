@@ -29,8 +29,12 @@ if not exist "%HELPER%" (
 REM Create hooks directory if needed
 if not exist "%HOOK_DIR%" mkdir "%HOOK_DIR%"
 
-REM Copy hook file into place
-copy /y "%HOOK_SRC%" "%HOOK_FILE%" >nul
+REM Copy hook file without BOM (use PowerShell to ensure UTF-8 no BOM)
+powershell -Command "$content = Get-Content '%HOOK_SRC%' -Raw; [System.IO.File]::WriteAllText('%HOOK_FILE%', $content, [System.Text.UTF8Encoding]::new($false))"
+if %errorlevel% neq 0 (
+    echo ERROR: Failed to copy gsd-testing-config.js
+    exit /b 1
+)
 echo Copied gsd-testing-config.js to %HOOK_FILE%
 
 REM Ensure settings.json exists
