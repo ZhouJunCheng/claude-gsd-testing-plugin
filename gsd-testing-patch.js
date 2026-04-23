@@ -88,6 +88,20 @@ After saving, proceed to Step 1 of the workflow.
 
 const PROCESS_TAG = '<process>';
 
+function makeBackupPath(filePath) {
+  const now = new Date();
+  const ts = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+    '-',
+    String(now.getHours()).padStart(2, '0'),
+    String(now.getMinutes()).padStart(2, '0'),
+    String(now.getSeconds()).padStart(2, '0'),
+  ].join('');
+  return `${filePath}.bak.${ts}`;
+}
+
 try {
   if (!fs.existsSync(SKILL_PATH)) process.exit(0);
 
@@ -100,6 +114,10 @@ try {
   const idx = content.indexOf(PROCESS_TAG);
   if (idx === -1) process.exit(0);
 
+  // Backup original file before modifying
+  fs.copyFileSync(SKILL_PATH, makeBackupPath(SKILL_PATH));
+
+  // Insert patch before <process>, leaving all original content intact
   const patched = content.slice(0, idx) + PATCH + content.slice(idx);
   fs.writeFileSync(SKILL_PATH, patched, 'utf8');
 
