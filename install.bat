@@ -1,5 +1,5 @@
 @echo off
-REM install.bat — Install gsd-testing-plugin (SKILL.md patch + hooks) for Windows
+REM install.bat - Install gsd-testing-plugin (SKILL.md patch + hooks) for Windows
 setlocal
 
 set "SCRIPT_DIR=%~dp0"

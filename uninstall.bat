@@ -1,5 +1,5 @@
 @echo off
-REM uninstall.bat — Remove gsd-testing-plugin (hooks + SKILL.md patch) for Windows
+REM uninstall.bat - Remove gsd-testing-plugin (hooks + SKILL.md patch) for Windows
 setlocal
 
 set "HELPER=%~dp0uninstall-helper.js"
