@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// gsd-hook-version: 2.1.0
+// gsd-hook-version: 2.2.0
 // GSD Testing Config Hook — PreToolUse hook
 //
-// Intercepts Skill(gsd-new-project) and injects additionalContext that
-// instructs Claude to collect testing framework config BEFORE the workflow
-// starts. Does NOT modify GSD source code — pure plugin.
+// Intercepts Skill(gsd-new-project) and BLOCKS execution until Claude has
+// collected testing framework config. Uses decision:block so the skill
+// cannot start until questions are answered. Does NOT modify GSD source code.
 
 const fs = require('fs');
 const path = require('path');
@@ -30,18 +30,25 @@ const ALL_FRAMEWORKS = [
   { id: 'dotnet-test', label: 'xUnit (.NET)',     lang: 'dotnet', desc: 'xUnit unit testing for C#/F# — most popular .NET testing framework',       runner: 'dotnet test',     coverage: 'dotnet test --collect:"XPlat Code Coverage"' },
 ];
 
+const DEBUG_LOG = '/tmp/gsd-testing-hook-debug.log';
+function dbg(msg) {
+  try { fs.appendFileSync(DEBUG_LOG, `[${new Date().toISOString()}] ${msg}\n`); } catch(e) {}
+}
+
 let input = '';
-const stdinTimeout = setTimeout(() => process.exit(0), 3000);
+const stdinTimeout = setTimeout(() => { dbg('TIMEOUT — no stdin data received'); process.exit(0); }, 3000);
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', chunk => (input += chunk));
 process.stdin.on('end', () => {
   clearTimeout(stdinTimeout);
+  dbg(`stdin received ${input.length} bytes`);
   try {
     const data = JSON.parse(input);
+    dbg(`tool_name=${data.tool_name} skill=${data.tool_input?.skill} name=${data.tool_input?.name}`);
 
-    if (data.tool_name !== 'Skill') process.exit(0);
+    if (data.tool_name !== 'Skill') { dbg('exit: not Skill tool'); process.exit(0); }
 
-    const skillName = data.tool_input?.name || data.tool_input?.skill_name || '';
+    const skillName = data.tool_input?.skill || data.tool_input?.name || data.tool_input?.skill_name || '';
     if (skillName !== 'gsd-new-project') process.exit(0);
 
     const cwd = data.cwd || process.cwd();
@@ -84,46 +91,36 @@ process.stdin.on('end', () => {
       .join('\n');
 
     const output = {
-      hookSpecificOutput: {
-        hookEventName: 'PreToolUse',
-        additionalContext:
-`TESTING SETUP — Do this FIRST before starting the new-project workflow steps:
+      decision: 'block',
+      reason:
+`TESTING SETUP REQUIRED — collect testing config NOW before starting gsd-new-project.
 
-Call AskUserQuestion with these three questions in one call:
+Step 1: Call AskUserQuestion with exactly these three questions in a single call:
 
-AskUserQuestion([
-  {
-    header: "Unit Testing Framework",
-    question: "Which unit testing framework will this project use? (required)",
-    multiSelect: false,
-    options: [
+  Question 1 — header: "Unit Testing Framework"
+    question: "Which unit testing framework will this project use?"
+    multiSelect: false
+    options:
 ${frameworkOptions}
-    ]
-  },
-  {
-    header: "Coverage Threshold",
-    question: "Set minimum unit test coverage? (required)",
-    multiSelect: false,
-    options: [
-      { label: "80% (Recommended)", description: "Standard — balance quality and velocity" },
-      { label: "90%", description: "High — critical paths well-tested" },
+
+  Question 2 — header: "Coverage Threshold"
+    question: "Set minimum unit test coverage?"
+    multiSelect: false
+    options:
+      { label: "80% (Recommended)", description: "Standard — balance quality and velocity" }
+      { label: "90%", description: "High — critical paths well-tested" }
       { label: "100%", description: "Full coverage — every line must be tested" }
-    ]
-  },
-  {
-    header: "TDD Mode",
-    question: "Enable Test-Driven Development (write tests first)?",
-    multiSelect: false,
-    options: [
-      { label: "Yes (Recommended)", description: "Enforce RED-GREEN-REFACTOR — planners generate test-first plans" },
+
+  Question 3 — header: "TDD Mode"
+    question: "Enable Test-Driven Development (write tests first)?"
+    multiSelect: false
+    options:
+      { label: "Yes (Recommended)", description: "Enforce RED-GREEN-REFACTOR — planners generate test-first plans" }
       { label: "No", description: "Write tests after implementation" }
-    ]
-  }
-])
 
-After collecting answers, run these commands:
+Step 2: After collecting answers, run these bash commands to save config:
 
-FRAMEWORK_MAP:
+FRAMEWORK_MAP (look up id/runner/coverage by the label the user selected):
 ${frameworkMap}
 
 COVERAGE_MAP:
@@ -137,8 +134,7 @@ COVERAGE_MAP:
   gsd-sdk query config-set testing.coverage_threshold <80|90|100>
   gsd-sdk query config-set workflow.tdd_mode <true|false>
 
-Then continue with the new-project workflow normally.`,
-      },
+Step 3: After saving config, invoke Skill(gsd-new-project) again to start the workflow.`,
     };
 
     process.stdout.write(JSON.stringify(output));

@@ -1,15 +1,9 @@
-// uninstall-helper.js — called by uninstall.bat to remove hook from settings.json
+// uninstall-helper.js — called by uninstall.bat to remove hooks and SKILL.md patch
 const fs = require('fs');
 const path = require('path');
 
-const settingsPath = path.join(process.env.USERPROFILE, '.claude', 'settings.json');
+const claudeDir = path.join(process.env.USERPROFILE, '.claude');
 
-if (!fs.existsSync(settingsPath)) {
-  console.log('settings.json not found, nothing to update');
-  process.exit(0);
-}
-
-// Backup before modifying
 const now = new Date();
 const stamp = now.getFullYear().toString() +
   String(now.getMonth() + 1).padStart(2, '0') +
@@ -17,27 +11,55 @@ const stamp = now.getFullYear().toString() +
   String(now.getHours()).padStart(2, '0') +
   String(now.getMinutes()).padStart(2, '0') +
   String(now.getSeconds()).padStart(2, '0');
-const backupPath = settingsPath + '.' + stamp + '.bak';
-fs.copyFileSync(settingsPath, backupPath);
-console.log('Backed up settings.json to ' + path.basename(backupPath));
 
-let settings = {};
-try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch { process.exit(0); }
+let settingsFiles = [];
+try {
+  settingsFiles = fs.readdirSync(claudeDir)
+    .filter(f => /^settings.*\.json$/.test(f) && !f.includes('.bak'))
+    .map(f => path.join(claudeDir, f));
+} catch (e) {}
 
-if (!settings.hooks || !settings.hooks.PreToolUse) {
-  console.log('No PreToolUse hooks found, nothing to remove');
-  process.exit(0);
+for (const sp of settingsFiles) {
+  if (!fs.existsSync(sp)) continue;
+  let s = {};
+  try { s = JSON.parse(fs.readFileSync(sp, 'utf8')); } catch { continue; }
+
+  let changed = false;
+
+  if (s.hooks && s.hooks.PreToolUse) {
+    const before = s.hooks.PreToolUse.length;
+    s.hooks.PreToolUse = s.hooks.PreToolUse.filter(
+      h => !(h.hooks && h.hooks.some(hh => hh.command && hh.command.includes('gsd-testing-config')))
+    );
+    if (s.hooks.PreToolUse.length !== before) { changed = true; console.log('Removed PreToolUse hook from ' + path.basename(sp)); }
+  }
+
+  if (s.hooks && s.hooks.SessionStart) {
+    const before = s.hooks.SessionStart.length;
+    s.hooks.SessionStart = s.hooks.SessionStart.filter(
+      h => !(h.hooks && h.hooks.some(hh => hh.command && hh.command.includes('gsd-testing-patch')))
+    );
+    if (s.hooks.SessionStart.length !== before) { changed = true; console.log('Removed SessionStart hook from ' + path.basename(sp)); }
+  }
+
+  if (changed) {
+    const bak = sp + '.' + stamp + '.bak';
+    fs.copyFileSync(sp, bak);
+    fs.writeFileSync(sp, JSON.stringify(s, null, 2) + '\n');
+  } else {
+    console.log('No plugin hooks in ' + path.basename(sp) + ', skipping');
+  }
 }
 
-const before = settings.hooks.PreToolUse.length;
-settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter(
-  h => !(h.hooks && h.hooks.some(hh => hh.command && hh.command.includes('gsd-testing-config')))
-);
-const after = settings.hooks.PreToolUse.length;
-
-if (before !== after) {
-  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
-  console.log('Removed gsd-testing-config hook from settings.json');
-} else {
-  console.log('Hook entry not found in settings.json, nothing to remove');
+// Remove SKILL.md patch
+const skillPath = path.join(process.env.USERPROFILE, '.claude', 'skills', 'gsd-new-project', 'SKILL.md');
+if (fs.existsSync(skillPath)) {
+  const content = fs.readFileSync(skillPath, 'utf8');
+  if (content.includes('gsd-testing-plugin')) {
+    const cleaned = content.replace(/<!-- gsd-testing-plugin.*?<\/pre_workflow_testing_setup>\n\n/s, '');
+    fs.writeFileSync(skillPath, cleaned, 'utf8');
+    console.log('Removed SKILL.md patch');
+  } else {
+    console.log('SKILL.md patch not found, skipping');
+  }
 }
