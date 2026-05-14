@@ -1,5 +1,5 @@
 @echo off
-REM uninstall.bat - Remove gsd-testing-plugin (hooks + SKILL.md patch) for Windows
+REM uninstall.bat - Remove gsd-testing-plugin (dual version support) for Windows
 setlocal
 
 set "HELPER=%~dp0uninstall-helper.js"
@@ -28,7 +28,7 @@ if exist "%PATCH_FILE%" (
     echo gsd-testing-patch.js not found, skipping
 )
 
-REM Run helper to remove hooks from settings*.json and strip SKILL.md patch
+REM Run helper to detect versions and remove components
 if not exist "%HELPER%" (
     echo ERROR: uninstall-helper.js not found in the same directory as uninstall.bat
     exit /b 1
@@ -36,10 +36,11 @@ if not exist "%HELPER%" (
 
 node "%HELPER%"
 if %errorlevel% neq 0 (
-    echo ERROR: Failed to update settings files
+    echo ERROR: Failed to remove components
     exit /b 1
 )
 
 echo.
 echo Uninstall complete. Restart Claude Code to apply changes.
 endlocal
+

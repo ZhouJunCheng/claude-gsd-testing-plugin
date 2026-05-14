@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# uninstall.sh — Remove gsd-testing-plugin (hooks + SKILL.md patch)
+# uninstall.sh — Remove gsd-testing-plugin (dual version support)
 
 set -e
 
@@ -20,12 +20,16 @@ for f in "$CONFIG_FILE" "$PATCH_FILE"; do
 done
 
 # Remove hooks from all settings*.json and strip SKILL.md patch
-node - <<'EOF'
+node - "$SCRIPT_DIR" <<'EOF'
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
+const [,, scriptDir] = process.argv;
 const claudeDir = path.join(os.homedir(), '.claude');
+
+// Import version detector
+const { detectGsdVersion, getVersionSummary } = require(path.join(scriptDir, 'gsd-version-detector.js'));
 
 const now = new Date();
 const stamp = now.getFullYear().toString() +
@@ -35,6 +39,15 @@ const stamp = now.getFullYear().toString() +
   String(now.getMinutes()).padStart(2, '0') +
   String(now.getSeconds()).padStart(2, '0');
 
+// Detect GSD versions
+console.log('\n=== GSD Version Detection ===');
+const versionInfo = detectGsdVersion();
+const summary = getVersionSummary(versionInfo);
+console.log(summary);
+console.log('');
+
+// Uninstall GSD 1.x support (hooks)
+console.log('=== Uninstalling GSD 1.x Support ===');
 let settingsFiles = [];
 try {
   settingsFiles = fs.readdirSync(claudeDir)
@@ -42,6 +55,7 @@ try {
     .map(f => path.join(claudeDir, f));
 } catch (e) {}
 
+let gsd1Removed = false;
 for (const sp of settingsFiles) {
   if (!fs.existsSync(sp)) continue;
   let s = {};
@@ -54,7 +68,7 @@ for (const sp of settingsFiles) {
     s.hooks.PreToolUse = s.hooks.PreToolUse.filter(
       h => !(h.hooks && h.hooks.some(hh => hh.command && hh.command.includes('gsd-testing-config')))
     );
-    if (s.hooks.PreToolUse.length !== before) { changed = true; console.log(`✓ Removed PreToolUse hook from ${path.basename(sp)}`); }
+    if (s.hooks.PreToolUse.length !== before) { changed = true; gsd1Removed = true; console.log(`✓ Removed PreToolUse hook from ${path.basename(sp)}`); }
   }
 
   if (s.hooks && s.hooks.SessionStart) {
@@ -62,7 +76,7 @@ for (const sp of settingsFiles) {
     s.hooks.SessionStart = s.hooks.SessionStart.filter(
       h => !(h.hooks && h.hooks.some(hh => hh.command && hh.command.includes('gsd-testing-patch')))
     );
-    if (s.hooks.SessionStart.length !== before) { changed = true; console.log(`✓ Removed SessionStart hook from ${path.basename(sp)}`); }
+    if (s.hooks.SessionStart.length !== before) { changed = true; gsd1Removed = true; console.log(`✓ Removed SessionStart hook from ${path.basename(sp)}`); }
   }
 
   if (changed) {
@@ -82,10 +96,34 @@ if (fs.existsSync(skillPath)) {
     const cleaned = content.replace(/<!-- gsd-testing-plugin.*?<\/pre_workflow_testing_setup>\n\n/s, '');
     fs.writeFileSync(skillPath, cleaned, 'utf8');
     console.log('✓ Removed SKILL.md patch');
+    gsd1Removed = true;
   } else {
     console.log('SKILL.md patch not found, skipping');
   }
 }
+
+if (!gsd1Removed) {
+  console.log('No GSD 1.x components found');
+}
+console.log('');
+
+// Uninstall GSD 2.x support (skill)
+console.log('=== Uninstalling GSD 2.x Support ===');
+try {
+  const { uninstallSkill } = require(path.join(scriptDir, 'gsd2', 'install-gsd2-skill.js'));
+  const result = uninstallSkill();
+  console.log(result.message);
+} catch (e) {
+  console.log('No GSD 2.x components found');
+}
+console.log('');
+
+// Summary
+console.log('=== Uninstallation Summary ===');
+if (gsd1Removed) {
+  console.log('✓ GSD 1.x support removed');
+}
+console.log('✓ Uninstallation complete');
 EOF
 
 echo ""

@@ -1,0 +1,66 @@
+{
+  "testing": {
+    "prompt_on_init": true,
+    "frameworks": [
+      {
+        "name": "Jest",
+        "language": "JavaScript/TypeScript",
+        "runner_command": "npm test",
+        "coverage_command": "npm test -- --coverage",
+        "description": "Popular JavaScript testing framework with built-in coverage"
+      },
+      {
+        "name": "Vitest",
+        "language": "JavaScript/TypeScript",
+        "runner_command": "npm test",
+        "coverage_command": "npm test -- --coverage",
+        "description": "Fast Vite-native test runner, Jest-compatible API"
+      },
+      {
+        "name": "pytest",
+        "language": "Python",
+        "runner_command": "pytest",
+        "coverage_command": "pytest --cov=. --cov-report=term-missing",
+        "description": "Python testing framework with powerful fixtures"
+      },
+      {
+        "name": "JUnit",
+        "language": "Java",
+        "runner_command": "mvn test",
+        "coverage_command": "mvn test jacoco:report",
+        "description": "Standard Java testing framework"
+      },
+      {
+        "name": "RSpec",
+        "language": "Ruby",
+        "runner_command": "bundle exec rspec",
+        "coverage_command": "bundle exec rspec --format documentation",
+        "description": "Ruby BDD testing framework"
+      },
+      {
+        "name": "Go testing",
+        "language": "Go",
+        "runner_command": "go test ./...",
+        "coverage_command": "go test -cover ./...",
+        "description": "Built-in Go testing package"
+      },
+      {
+        "name": "Rust cargo test",
+        "language": "Rust",
+        "runner_command": "cargo test",
+        "coverage_command": "cargo tarpaulin --out Stdout",
+        "description": "Built-in Rust testing framework"
+      },
+      {
+        "name": "PHPUnit",
+        "language": "PHP",
+        "runner_command": "./vendor/bin/phpunit",
+        "coverage_command": "./vendor/bin/phpunit --coverage-text",
+        "description": "PHP testing framework"
+      }
+    ],
+    "coverage_thresholds": [80, 90, 100],
+    "default_coverage_threshold": 80,
+    "tdd_mode_default": true
+  }
+}
